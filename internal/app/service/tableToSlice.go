@@ -3,10 +3,11 @@ package service
 import (
 	"fmt"
 	"github.com/xuri/excelize/v2"
+	"productTracker/internal/app/model"
 	"strconv"
 )
 
-func tableToSlice(filepath string) ([]Product, error) {
+func tableToSlice(filepath string) ([]model.Product, error) {
 	f, err := excelize.OpenFile(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open file: %v", err)
@@ -19,7 +20,7 @@ func tableToSlice(filepath string) ([]Product, error) {
 	}
 
 	var rawData = make([]string, 0, 5)
-	var products []Product
+	var products []model.Product
 
 	for _, row := range rows {
 		rawData = rawData[:0]
@@ -36,12 +37,12 @@ func tableToSlice(filepath string) ([]Product, error) {
 		}
 
 		products = append(products,
-			Product{
-				offerId:   offerId,
-				name:      name,
-				price:     price,
-				quantity:  quantity,
-				available: available,
+			model.Product{
+				OfferId:   offerId,
+				Name:      name,
+				Price:     price,
+				Quantity:  quantity,
+				Available: available,
 			})
 	}
 	return products, nil
