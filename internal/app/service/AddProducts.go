@@ -2,8 +2,6 @@ package service
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 )
 
@@ -39,23 +37,4 @@ func AddProducts(url string, sellerId int) {
 		panic(e)
 	}
 	fmt.Println(products[0].name)
-}
-
-func DownloadFile(out *os.File, url string) error {
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Errorf("can't close Body after downloading: %v", err)
-		}
-	}(resp.Body)
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	fmt.Printf("Copy %v to %v\n", url, out.Name())
-	return err
 }
