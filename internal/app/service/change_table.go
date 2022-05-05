@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func AddProducts(url string, db *sql.DB, sellerId int) {
+func ChangeTable(url string, db *sql.DB, sellerId int) {
 	var tmpFile, err = os.CreateTemp("/tmp", "*.xlsx")
 	if err != nil {
 		panic(err)
@@ -31,21 +31,15 @@ func AddProducts(url string, db *sql.DB, sellerId int) {
 	}
 
 	for _, product := range products {
-		insertStatement := `
-			INSERT INTO products (sellerId, offerId, name, price, quantity, available)
-			VALUES ($1, $2, $3, $4, $5, $6)`
-		_, err = db.Exec(
-			insertStatement,
-			sellerId,
-			product.OfferId,
-			product.Name,
-			product.Price,
-			product.Quantity,
-			product.Available,
-		)
-		if err != nil {
-			panic(err)
+		if product.Available {
+			if isInTable(product, db, sellerId) {
+				UpdateQuery(product, db, sellerId)
+			} else {
+				InsertQuery(product, db, sellerId)
+			}
+		} else {
+
+			DeleteQuery(product, db, sellerId)
 		}
 	}
-
 }
