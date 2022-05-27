@@ -10,7 +10,7 @@
     DB_NAME=[имя БД]
     HTTP_PORT=[порт сервера]
     
-Далее запустить файл productTracker.go
+Далее запустить файл cmd/productTracker.go
 
 Готово!
 
