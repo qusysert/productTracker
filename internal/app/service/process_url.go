@@ -7,33 +7,63 @@ import (
 	"io"
 	"productTracker/internal/app/model"
 	"productTracker/internal/app/repository"
+	"productTracker/internal/pkg/db"
 	"productTracker/internal/pkg/downloader"
 	"strconv"
 )
 
-func ProcessProductsFromURL(ctx context.Context, url string, sellerId int) {
+func ProcessProductsFromURL(ctx context.Context, url string, sellerId int) (model.ProductListStat, error) {
 	reader, err := downloader.DownloadReader(url)
+	ret := model.ProductListStat{}
 	if err != nil {
 		fmt.Errorf("can't download the file: %v", err)
+		return ret, err
 	}
 	defer reader.Close()
 
 	products, err := TableToSlice(reader, sellerId)
 	if err != nil {
-		panic(err)
+		return ret, err
 	}
 
-	for _, product := range products {
-		if product.Available {
-			if repository.IsProductExists(ctx, product) {
-				repository.UpdateProduct(ctx, product)
-			} else {
-				repository.InsertProduct(ctx, product)
-			}
-		} else {
-			repository.DeleteProduct(ctx, product)
-		}
+	if err := repository.CreateSellerIfNotExists(ctx, sellerId); err != nil {
+		return ret, err
 	}
+	if err := db.ExecTx(ctx, func(ctx context.Context) error {
+		if err := repository.LockSeller(ctx, sellerId); err != nil {
+			return err
+		}
+		for _, product := range products {
+			if product.Available {
+				exist, err := repository.IsProductExists(ctx, product)
+				if err != nil {
+					return err
+				}
+				if exist {
+					if err := repository.UpdateProduct(ctx, product); err != nil {
+						return err
+					}
+					ret.Updated++
+
+				} else {
+					if err := repository.InsertProduct(ctx, product); err != nil {
+						return err
+					}
+					ret.Added++
+				}
+			} else {
+				if err := repository.DeleteProduct(ctx, product); err != nil {
+					return err
+				}
+				ret.Deleted++
+			}
+		}
+		return nil
+	}); err != nil {
+		return ret, err
+	}
+
+	return ret, nil
 }
 
 func TableToSlice(reader io.Reader, sellerId int) ([]model.Product, error) {

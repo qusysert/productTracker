@@ -10,12 +10,28 @@ import (
 
 const ctxName = "db"
 
-func AddToContext(ctx context.Context, conn *sql.DB) context.Context {
+func AddToContext(ctx context.Context, conn Conn) context.Context {
 	return context.WithValue(ctx, ctxName, conn)
 }
 
-func FromContext(ctx context.Context) *sql.DB {
-	conn, ok := ctx.Value(ctxName).(*sql.DB)
+func ExecTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	conn := FromContext(ctx)
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(AddToContext(ctx, &Tx{Tx: tx})); err != nil {
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func FromContext(ctx context.Context) Conn {
+	conn, ok := ctx.Value(ctxName).(Conn)
 	if !ok {
 		panic("Not found db in context")
 	}

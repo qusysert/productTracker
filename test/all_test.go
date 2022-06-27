@@ -18,7 +18,7 @@ func doTest(t *testing.T, fn func(ctx context.Context)) {
 	}
 
 	conn := db.New(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
-	ctx := db.AddToContext(context.Background(), conn)
+	ctx := db.AddToContext(context.Background(), &db.Db{conn})
 
 	_, err = db.FromContext(ctx).Exec("begin;")
 	assert.Nil(t, err)

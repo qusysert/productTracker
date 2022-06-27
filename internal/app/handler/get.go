@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"productTracker/internal/app/model"
 	"productTracker/internal/app/repository"
@@ -29,19 +27,6 @@ type GetResponseProduct struct {
 }
 
 func GetHandler(w http.ResponseWriter, r *http.Request) {
-	var req GetRequest
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = json.Unmarshal(body, &req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	handle(w, r, func(req GetRequest) (GetResponse, error) {
 		filtered, err := repository.GetProductList(r.Context(), model.ProductFilter{SellerId: req.SellerId, OfferId: req.OfferId, Name: req.Name})
 		if err != nil {
